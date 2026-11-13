@@ -1,0 +1,16 @@
+{
+  "name": "Suivi FOE",
+  "short_name": "Suivi FOE",
+  "description": "Suivi des campagnes d'Incursions quantiques de Forge of Empires",
+  "lang": "fr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0c1a33",
+  "theme_color": "#0c1a33",
+  "icons": [
+    { "src": "icone-180.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "icone-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icone.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

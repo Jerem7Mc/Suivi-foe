@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Suivi FOE</title>
+<meta name="theme-color" content="#0c1a33">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Suivi FOE">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icone.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icone-180.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main class="app" id="vue" tabindex="-1"></main>
+
+<nav class="onglets" aria-label="Sections">
+  <button type="button" data-vue="recolte"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9 2h6"/></svg>Récolte</button>
+  <button type="button" data-vue="plan"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg>Plan</button>
+  <button type="button" data-vue="colonie"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21V10l5-4 5 4v11M13 21v-7h8v7M2 21h20M8 21v-5"/></svg>Colonie</button>
+  <button type="button" data-vue="routines"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 0 1 14-5l2 2M20 4v5h-5M20 12a8 8 0 0 1-14 5l-2-2M4 20v-5h5"/></svg>Routines</button>
+  <button type="button" data-vue="historique"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></svg>Historique</button>
+</nav>
+
+<dialog id="fenetre" aria-labelledby="fenetre-titre"></dialog>
+<noscript>Cette app a besoin de JavaScript.</noscript>
+<script type="module" src="app.js"></script>
+</body>
+</html>

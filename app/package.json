@@ -1,0 +1,6 @@
+{
+  "name": "suivi-foe",
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "node --test tests/" }
+}
