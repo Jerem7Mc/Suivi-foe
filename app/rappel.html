@@ -14,7 +14,9 @@
   <p class="sous" id="quand"></p>
   <div class="verre bloc" id="detail" hidden></div>
   <a class="btn principal" id="ajouter" href="#" style="text-decoration:none">Ajouter au calendrier</a>
-  <p class="note" id="aide">L’événement s’ouvre avec une alerte à l’heure de la récolte. Touche « Ajouter », puis reviens dans l’app Suivi FOE.</p>
+  <a class="btn" id="telecharger" href="#" download="recolte-foe.ics" style="text-decoration:none">Télécharger le fichier du rappel</a>
+  <p class="note" id="aide">Si le navigateur propose de télécharger le fichier, accepte puis touche-le : l’événement s’ouvre avec son alerte. Reviens ensuite dans l’app Suivi FOE.</p>
+  <p class="note"><a id="chrome" href="#" hidden>Ouvrir cette page dans Chrome</a></p>
 </main>
 <script type="module">
 // Page ouverte dans Safari : une app installée sur l'écran d'accueil ne peut pas ouvrir le calendrier elle-même.
@@ -28,6 +30,7 @@ const lien = document.getElementById("ajouter");
 if (!nom || Number.isNaN(date.getTime())) {
   document.getElementById("quand").textContent = "Ce lien de rappel est incomplet. Rouvre l’app Suivi FOE et touche de nouveau « Ajouter le rappel au calendrier ».";
   lien.hidden = true;
+  document.getElementById("telecharger").hidden = true;
   document.getElementById("aide").hidden = true;
 } else {
   const jour = date.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
@@ -40,7 +43,16 @@ if (!nom || Number.isNaN(date.getTime())) {
     detail.innerHTML = "<ul style='margin:0;padding-left:20px'></ul>";
     for (const ligne of description.split("\n")) detail.firstChild.appendChild(Object.assign(document.createElement("li"), { textContent: ligne }));
   }
-  lien.href = "data:text/calendar;charset=utf-8," + encodeURIComponent(ics(`FOE : ${nom}`, date, description));
+  // Adresse blob : le navigateur la traite comme un vrai fichier de calendrier (les adresses data: sont ignorées).
+  const adresse = URL.createObjectURL(new Blob([ics(`FOE : ${nom}`, date, description)], { type: "text/calendar;charset=utf-8" }));
+  lien.href = adresse;
+  document.getElementById("telecharger").href = adresse;
+  const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  if (iOS && !/CriOS/.test(navigator.userAgent) && location.protocol === "https:") {
+    const chrome = document.getElementById("chrome");
+    chrome.href = location.href.replace(/^https:/, "googlechromes:");
+    chrome.hidden = false;
+  }
 }
 </script>
 </body>
