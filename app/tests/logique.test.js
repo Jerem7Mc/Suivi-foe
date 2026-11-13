@@ -61,6 +61,20 @@ test("plan de base complet : tout vendu à la fin, jamais de quantité négative
   assert.equal(plan.etapes.length, 20);
 });
 
+test("bâtiments notés à la main : comptés à leur étape, effacés par « tout vendre »", () => {
+  const plan = planDeBase();
+  const coches = {};
+  plan.etapes.slice(0, 4).forEach(e => e.actions.forEach(a => coches[a.id] = true));
+  const ajouts = [{ etape: 3, cle: "pilori", n: 1 }, { etape: 3, cle: "decoration", n: 2 }, { etape: 2, cle: "tannerie", n: -1 }];
+  const { batiments } = etatColonie(plan, coches, ajouts);
+  assert.equal(batiments.pilori, 1);
+  assert.equal(batiments.decoration, 2);
+  assert.equal(batiments.tannerie, 3);
+  plan.etapes.forEach(e => e.actions.forEach(a => coches[a.id] = true));
+  assert.equal(etatColonie(plan, coches, ajouts).batiments.pilori, 0);
+  assert.deepEqual(lireAction("Poser 2 décorations").deltas, { decoration: 2 });
+});
+
 test("créneaux : matin 8 h, soir 18 h, deux par jour", () => {
   assert.equal(creneau("2026-11-12", 0).toString(), new Date(2026, 10, 12, 8).toString());
   assert.equal(creneau("2026-11-12", 3).toString(), new Date(2026, 10, 13, 18).toString());

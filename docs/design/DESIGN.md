@@ -7,10 +7,10 @@ bleu marine (les disques de couleur de la première maquette ont été refusés)
 ```yaml
 couleurs:
   fond: "#0c1a33"          # marine uni, aucun motif ni dégradé
-  texte: "#f6eedc"         # parchemin
-  texte-2: "#d2c8b2"       # texte secondaire
-  or: "#ebbb52"            # action principale et étape en cours, une seule par vue
-  sur-or: "#1b1404"        # texte sur l'or
+  texte: "#ffffff"         # blanc pur (demande du 13/11)
+  texte-2: "#e3e8f2"       # texte secondaire
+  or: "#ffc20e"            # action principale et étape en cours, une seule par vue
+  sur-or: "#171100"        # texte sur l'or
   vert: "#7fd69a"          # fait, palier atteint
   rouge: "#ff9a88"         # suppression uniquement
 verre:
@@ -27,4 +27,4 @@ ombre: uniquement sous la barre d'onglets flottante et la fenêtre de saisie
 ```
 
 Élément propre à l'app : la frise de campagne (11 jours, ligne du matin et ligne du soir).
-Contrastes mesurés avec `contraste.py` sur verre : texte 9,3:1 au moins, secondaire 5,8:1, or 5,4:1, rouge 4,7:1.
+Contrastes mesurés avec `contraste.py` sur verre : texte 14,4:1, secondaire 11,7:1, or 8,9:1, rouge 7:1.

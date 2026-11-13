@@ -25,6 +25,7 @@ export const BATIMENTS = [
   { cle: "medecin", nom: "Médecin", pluriel: "Médecins", famille: "Culture", motif: "m[ée]decins?" },
   { cle: "pilori", nom: "Pilori", pluriel: "Piloris", famille: "Culture", motif: "piloris?" },
   { cle: "potence", nom: "Potence", pluriel: "Potences", famille: "Culture", motif: "potences?" },
+  { cle: "decoration", nom: "Décoration", pluriel: "Décorations", famille: "Culture", motif: "d[ée]corations?|d[ée]cos?" },
   { cle: "caserne", nom: "Caserne", pluriel: "Casernes", famille: "Militaire", motif: "casernes?" },
   { cle: "corderie", nom: "Corderie", pluriel: "Corderies", famille: "Biens", motif: "corderies?" },
   { cle: "apiculture", nom: "Apiculture", pluriel: "Apicultures", famille: "Biens", motif: "apicultures?" },
@@ -75,11 +76,14 @@ export function resumerEffets(effets) {
   return morceaux.join(", ");
 }
 
-/** État de la colonie d'après les actions cochées, dans l'ordre du plan. */
-export function etatColonie(plan, coches) {
+/**
+ * État de la colonie d'après les actions cochées, dans l'ordre du plan.
+ * `ajouts` : bâtiments notés à la main, [{ etape, cle, n }], appliqués à la fin de leur étape.
+ */
+export function etatColonie(plan, coches, ajouts = []) {
   const batiments = {};
   let extensions = 0;
-  for (const etape of plan.etapes) {
+  for (const [i, etape] of plan.etapes.entries()) {
     for (const action of etape.actions) {
       if (!coches[action.id]) continue;
       const effets = lireAction(action.texte);
@@ -87,6 +91,7 @@ export function etatColonie(plan, coches) {
       for (const [cle, n] of Object.entries(effets.deltas)) batiments[cle] = Math.max(0, (batiments[cle] ?? 0) + n);
       extensions += effets.extensions;
     }
+    for (const a of ajouts) if (a.etape === i) batiments[a.cle] = Math.max(0, (batiments[a.cle] ?? 0) + a.n);
   }
   return { batiments, extensions };
 }

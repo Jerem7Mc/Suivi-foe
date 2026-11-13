@@ -57,6 +57,16 @@ const duree = ms => {
 const rang = (i, n) => (i === 0 ? "D" : i === n - 1 ? "F" : i);
 const moment = i => (i % 2 ? "soir" : "matin");
 
+const ajouts = () => (etat.campagne.ajouts ??= []);
+const libelleAjout = a => {
+  const b = BATIMENTS.find(x => x.cle === a.cle);
+  return `${a.n > 0 ? "Posé" : "Vendu"} : ${Math.abs(a.n)}${NB}${(Math.abs(a.n) > 1 ? b.pluriel : b.nom).toLowerCase()}`;
+};
+const lignesAjouts = filtre => ajouts().map((a, k) => ({ a, k })).filter(({ a }) => filtre(a))
+  .map(({ a, k }) => `<li><span class="grandit">${libelleAjout(a)}<span class="detail">Noté à la main</span></span>
+    <button class="rond retirer" type="button" data-action="retirer-ajout" data-k="${k}" aria-label="Retirer : ${libelleAjout(a)}">−</button></li>`).join("");
+const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
 const planDe = pid => etat.plans.find(p => p.id === pid);
 const planCampagne = () => etat.campagne && planDe(etat.campagne.planId);
 const indexCourant = () => {
@@ -122,8 +132,12 @@ function vueRecolte() {
   const actions = etape.actions.length
     ? `<ul class="liste">${etape.actions.map(a => `<li><label><input type="checkbox" data-change="cocher" data-id="${a.id}"${c.coches[a.id] ? " checked" : ""}><span>${e(a.texte)}</span></label></li>`).join("")}</ul>`
     : `<p class="vide-etat">Aucune action dans cette étape. Ajoute-en depuis l’onglet Plan.</p>`;
+  const notes = lignesAjouts(a => a.etape === i);
+  const noter = `${notes ? `<div class="verre"><ul class="liste">${notes}</ul></div>` : ""}
+  <button class="btn" type="button" data-action="noter-batiment">Noter un bâtiment posé ou vendu</button>`;
   const btnValider = `<button class="btn${prete ? " principal" : ""}" type="button" data-action="valider">Valider «${NB}${e(etape.nom)}${NB}»</button>`;
   const btnRappel = `<button class="btn principal" type="button" data-action="rappel">Ajouter le rappel au calendrier</button>`;
+  const autreRappel = prete ? "" : `<p class="note"><button class="lien" type="button" data-action="rappel-partage">Le calendrier ne s’ouvre pas ? Partager le fichier du rappel</button></p>`;
   const suivante = plan.etapes[i + 1];
   const ensuite = suivante ? `<h2>Ensuite</h2>
     <div class="verre bloc">
@@ -135,7 +149,8 @@ function vueRecolte() {
   return `<h1>${e(etape.nom)}</h1>${sous}
   <div class="verre bloc">${bloc}<p class="petit">${precedente}</p>${annuler}</div>
   <div class="verre">${actions}</div>
-  ${prete ? btnValider : btnRappel + btnValider}
+  ${noter}
+  ${prete ? btnValider : btnRappel + btnValider + autreRappel}
   ${ensuite}
   ${frise(plan, i)}
   <button class="btn danger" type="button" data-action="clore">Clore la campagne maintenant</button>`;
@@ -229,7 +244,8 @@ function vueColonie() {
     return `<h1>Colonie</h1><p class="sous">Aucune campagne en cours.</p>${calcul}
     <div class="verre vide-etat"><strong>Pas de bâtiments à compter</strong>Ils s’affichent ici dès qu’une campagne est démarrée et que des actions sont cochées.</div>`;
   }
-  const plan = planCampagne(), { batiments, extensions } = etatColonie(plan, etat.campagne.coches);
+  const plan = planCampagne(), { batiments, extensions } = etatColonie(plan, etat.campagne.coches, ajouts());
+  const tousAjouts = lignesAjouts(() => true);
   const familles = FAMILLES.map(f => {
     const lignes = BATIMENTS.filter(b => b.famille === f && batiments[b.cle] > 0)
       .map(b => `<li>${batiments[b.cle] > 1 ? b.pluriel : b.nom}<span class="valeur">${batiments[b.cle]}</span></li>`).join("");
@@ -241,7 +257,11 @@ function vueColonie() {
   ${familles || `<div class="verre vide-etat"><strong>Aucun bâtiment compté</strong>Coche les actions de la mise en place pour voir la colonie se remplir.</div>`}
   <h2>Terrain</h2>
   <div class="verre"><ul class="liste"><li>Extensions achetées<span class="valeur">${extensions}</span></li></ul></div>
-  <p class="note">Les quantités libres («${NB}des piloris${NB}», «${NB}des décorations${NB}») ne sont pas comptées. Le détail de ce qui est compté se voit dans l’onglet Plan, bouton Modifier.</p>`;
+  <h2>Notés à la main</h2>
+  <p class="note" style="margin:0 4px 10px">Pour ce que le plan laisse libre («${NB}des potences${NB}», «${NB}des décorations${NB}») ou ce que tu as fait autrement.</p>
+  ${tousAjouts ? `<div class="verre"><ul class="liste">${tousAjouts}</ul></div>` : ""}
+  <button class="btn" type="button" data-action="noter-batiment">Noter un bâtiment posé ou vendu</button>
+  <p class="note">Le détail de ce que l’app compte dans chaque action se voit dans l’onglet Plan, bouton Modifier.</p>`;
 }
 
 // ---------- Vue : routines ----------
@@ -329,6 +349,12 @@ async function remettreFichier(fichier) {
   setTimeout(() => URL.revokeObjectURL(lien.href), 10000);
 }
 
+function texteRappel() {
+  const c = etat.campagne, i = indexCourant(), etape = planCampagne().etapes[i];
+  return ics(`FOE : ${etape.nom}`, pretA(c.debut, i, c.validations[i - 1]), etape.actions.map(a => a.texte).join("\n"));
+}
+const fichierRappel = () => new File([texteRappel()], "recolte-foe.ics", { type: "text/calendar" });
+
 // ---------- Actions ----------
 
 const ACTIONS = {
@@ -352,10 +378,26 @@ const ACTIONS = {
     etat.campagne.validations[indexCourant() - 1] = null;
   },
   async rappel() {
-    const c = etat.campagne, i = indexCourant(), etape = planCampagne().etapes[i];
-    const texte = ics(`FOE : ${etape.nom}`, pretA(c.debut, i, c.validations[i - 1]), etape.actions.map(a => a.texte).join("\n"));
-    await remettreFichier(new File([texte], "recolte-foe.ics", { type: "text/calendar" }));
+    // Sur iPhone, ouvrir directement l'événement : la feuille de partage ne propose pas le calendrier.
+    if (iOS) location.href = "data:text/calendar;charset=utf-8," + encodeURIComponent(texteRappel());
+    else await remettreFichier(fichierRappel());
   },
+  async "rappel-partage"() { await remettreFichier(fichierRappel()); },
+  async "noter-batiment"() {
+    const n = planCampagne().etapes.length, i = Math.min(indexCourant(), n - 1);
+    const r = await demander({
+      titre: "Noter un bâtiment", ok: "Noter",
+      texte: `Compté dans la colonie à l’étape «${NB}${planCampagne().etapes[i].nom}${NB}».`,
+      champs: [
+        { nom: "sens", label: "Ce que tu as fait", type: "select", valeur: "1", options: [["1", "Posé"], ["-1", "Vendu"]] },
+        { nom: "cle", label: "Bâtiment", type: "select", valeur: "pilori", options: BATIMENTS.map(b => [b.cle, b.nom]).sort((a, b) => a[1].localeCompare(b[1], "fr")) },
+        { nom: "quantite", label: "Combien", type: "number", valeur: "1", requis: true },
+      ],
+    });
+    const quantite = Math.floor(Number(r?.quantite));
+    if (r && quantite > 0) ajouts().push({ etape: i, cle: r.cle, n: Number(r.sens) * quantite });
+  },
+  "retirer-ajout"(d) { ajouts().splice(d.k, 1); },
   async clore() {
     const c = etat.campagne, plan = planCampagne(), n = plan.etapes.length;
     const r = await demander({
