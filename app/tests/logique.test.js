@@ -104,6 +104,10 @@ test("routines : remise à zéro chaque jour ou chaque lundi", () => {
   assert.equal(routineFaite({ periode: "semaine", faitLe: vendredi.toISOString() }, new Date(2026, 10, 15, 23)), true);
   assert.equal(routineFaite({ periode: "semaine", faitLe: vendredi.toISOString() }, new Date(2026, 10, 16, 1)), false);
   assert.equal(routineFaite({ periode: "jour", faitLe: null }), false);
+  // Expédition de guilde : la semaine repart le mardi.
+  assert.equal(routineFaite({ periode: "semaine", debut: 2, faitLe: vendredi.toISOString() }, new Date(2026, 10, 16, 23)), true);
+  assert.equal(routineFaite({ periode: "semaine", debut: 2, faitLe: vendredi.toISOString() }, new Date(2026, 10, 17, 0, 5)), false);
+  assert.equal(routineFaite({ periode: "semaine", debut: 2, faitLe: new Date(2026, 10, 16, 9).toISOString() }, new Date(2026, 10, 17, 9)), false);
 });
 
 test("paliers d'euphorie", () => {

@@ -18,7 +18,7 @@ function etatInitial() {
       { id: "r2", texte: "Aider les amis et la guilde", periode: "jour", faitLe: null },
       { id: "r3", texte: "Passer à la taverne des amis", periode: "jour", faitLe: null },
       { id: "r4", texte: "Faire le défi quotidien", periode: "jour", faitLe: null },
-      { id: "r5", texte: "Expédition de guilde", periode: "semaine", faitLe: null },
+      { id: "r5", texte: "Expédition de guilde", periode: "semaine", debut: 2, faitLe: null },
       { id: "r6", texte: "Champs de bataille de guilde", periode: "semaine", faitLe: null },
     ],
     colonie: { population: "", points: "" },
@@ -34,6 +34,9 @@ function charger() {
 }
 
 let etat = charger();
+// Données d'avant l'ajout du jour de reprise : l'expédition de guilde repart le mardi.
+etat.routines.forEach(r => { if (r.id === "r5" && r.debut == null) r.debut = 2; });
+const JOURS_SEMAINE = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
 const sauver = () => { try { localStorage.setItem(CLE, JSON.stringify(etat)); } catch { /* stockage indisponible */ } };
 
 const ui = { vue: "recolte", planId: null, editionPlan: false, editionRoutines: false, ouverts: new Set() };
@@ -181,7 +184,11 @@ function vuePlan() {
           <button class="rond" type="button" data-action="editer-action" data-etape="${i}" data-k="${k}" aria-label="Modifier l’action : ${e(a.texte)}">${CRAYON}</button>
           <button class="rond retirer" type="button" data-action="retirer-action" data-etape="${i}" data-k="${k}" aria-label="Retirer l’action : ${e(a.texte)}">−</button></li>`;
       }).join("")}</ul>
-      <div class="ajout"><button class="btn" type="button" data-action="ajouter-action" data-etape="${i}">Ajouter une action</button></div>`;
+      <div class="ajout"><button class="btn" type="button" data-action="ajouter-action" data-etape="${i}">Ajouter une action</button></div>
+      <div class="barre" style="padding:0 18px 14px;margin:0">
+        <button class="btn mini" type="button" data-action="renommer-etape" data-etape="${i}">Renommer l’étape</button>
+        ${n > 2 ? `<button class="btn mini danger" type="button" data-action="retirer-etape" data-etape="${i}">Retirer l’étape</button>` : ""}
+      </div>`;
     } else if (enCampagne) {
       corps = `<ul class="liste">${etape.actions.map(a => `<li><label><input type="checkbox" data-change="cocher" data-id="${a.id}"${c.coches[a.id] ? " checked" : ""}><span>${e(a.texte)}</span></label></li>`).join("")}</ul>`;
     } else {
@@ -207,12 +214,22 @@ function vuePlan() {
   </div>
   ${outils}
   <div class="verre">${etapes}</div>
+  ${!ui.editionPlan ? "" : n < ETAPES_MAX
+    ? `<button class="btn" type="button" data-action="ajouter-etape">Ajouter une étape</button>`
+    : `<p class="note">Le plan occupe déjà les ${ETAPES_MAX} créneaux d’une campagne (11 jours, matin et soir).</p>`}
+  <h2>Bonnes pratiques</h2>
+  <div class="verre"><ul class="liste">
+    <li><div>Récolter d’abord, vendre et poser ensuite<span class="detail">Les constructions se font pendant les 10${NB}h d’attente, sans faire chuter l’euphorie au moment de récolter.</span></div></li>
+    <li><div>Dépasser 200${NB}% d’euphorie avant chaque récolte<span class="detail">Production ×1,5 au lieu de ×1,2. Source : aide InnoGames.</span></div></li>
+    <li><div>Vider la jauge d’actions quantiques avant chaque récolte et avant la nuit<span class="detail">Une jauge pleine ne se recharge plus.</span></div></li>
+    <li><div>Combattre avant de donner<span class="detail">Garnisons d’abord, puis bastions, puis boss. Pièces et fournitures seulement quand tu ne peux plus combattre. Source : Forge Addicts.</span></div></li>
+    <li><div>Lancer le lot le plus cher pour les unités et les biens<span class="detail">Moins cher à l’unité. Source : Les NRs.</span></div></li>
+  </ul></div>
   <h2>Pistes à tester</h2>
   <div class="verre"><ul class="liste">
-    <li><div>Dépasser 200${NB}% d’euphorie avant chaque récolte<span class="detail">Production ×1,5 au lieu de ×1,2. Source : aide InnoGames.</span></div></li>
+    <li><div>Des piloris à la place des décorations en fin de campagne<span class="detail">Les bâtiments culturels produisent des actions quantiques ; les décorations en feraient perdre. Une seule source : Forge Addicts.</span></div></li>
+    <li><div>Récolter aussi le dimanche<span class="detail">Deux créneaux restent libres après le samedi soir : ajoute des étapes avec le bouton Modifier.</span></div></li>
     <li><div>Récolter les maisons une par une en remplaçant au fur et à mesure<span class="detail">Garde l’euphorie haute pendant toute la récolte. Source : Forge Addicts.</span></div></li>
-    <li><div>Lancer toujours le lot le plus cher pour les biens et les unités<span class="detail">Moins cher à l’unité. Source : Les NRs.</span></div></li>
-    <li><div>Remplacer les décorations de fin de campagne par des piloris<span class="detail">Les décorations réduiraient les actions générées. Source : Forge Addicts.</span></div></li>
   </ul></div>`;
 }
 
@@ -270,13 +287,13 @@ function vueRoutines() {
   const groupe = (periode, titre) => {
     const liste = etat.routines.filter(r => r.periode === periode);
     const faites = liste.filter(r => routineFaite(r)).length;
-    const lignes = liste.map(r => `<li><label><input type="checkbox" data-change="routine" data-id="${r.id}"${routineFaite(r) ? " checked" : ""}><span>${e(r.texte)}</span></label>
+    const lignes = liste.map(r => `<li><label><input type="checkbox" data-change="routine" data-id="${r.id}"${routineFaite(r) ? " checked" : ""}><span>${e(r.texte)}${periode === "semaine" ? `<span class="detail">Repart le ${JOURS_SEMAINE[r.debut ?? 1]}</span>` : ""}</span></label>
       ${ui.editionRoutines ? `<button class="rond retirer" type="button" data-action="retirer-routine" data-id="${r.id}" aria-label="Retirer la routine : ${e(r.texte)}">−</button>` : ""}</li>`).join("");
     return `<div class="entete"><h2>${titre}</h2><span class="petit num">${liste.length ? `${faites} sur ${liste.length}` : ""}</span></div>
       <div class="verre">${lignes ? `<ul class="liste">${lignes}</ul>` : `<p class="vide-etat">Aucune routine ici pour l’instant.</p>`}</div>`;
   };
   return `<h1>Routines</h1>
-  <p class="sous">Le reste du jeu, à cocher. Les cases se vident seules chaque jour, ou chaque lundi pour les routines de la semaine.</p>
+  <p class="sous">Le reste du jeu, à cocher. Les cases se vident seules chaque jour, ou à leur jour de reprise pour les routines de la semaine.</p>
   ${groupe("jour", "Chaque jour")}
   ${groupe("semaine", "Chaque semaine")}
   <button class="btn" type="button" data-action="ajouter-routine">Ajouter une routine</button>
@@ -347,6 +364,20 @@ async function remettreFichier(fichier) {
   lien.download = fichier.name;
   lien.click();
   setTimeout(() => URL.revokeObjectURL(lien.href), 10000);
+}
+
+/** Garde validations, coches et bâtiments notés alignés quand une étape est ajoutée (sens 1) ou retirée (sens -1). */
+function decalerCampagne(plan, pos, sens, retiree) {
+  const c = etat.campagne;
+  if (c?.planId !== plan.id) return;
+  while (c.validations.length < pos) c.validations.push(null);
+  if (sens === 1) c.validations.splice(pos, 0, null);
+  else {
+    c.validations.splice(pos, 1);
+    retiree.actions.forEach(a => delete c.coches[a.id]);
+    c.ajouts = ajouts().filter(a => a.etape !== pos);
+  }
+  ajouts().forEach(a => { if (a.etape >= pos + (sens === 1 ? 0 : 1)) a.etape += sens; });
 }
 
 function texteRappel() {
@@ -452,6 +483,38 @@ const ACTIONS = {
     planDe(ui.planId).etapes[d.etape].actions.splice(d.k, 1);
   },
 
+  async "ajouter-etape"() {
+    const plan = planDe(ui.planId), n = plan.etapes.length;
+    const r = await demander({
+      titre: "Ajouter une étape", ok: "Ajouter",
+      texte: "Les étapes suivantes se décalent d’un créneau (matin, soir, matin…).",
+      champs: [
+        { nom: "nom", label: "Nom de l’étape", valeur: `${n - 1}ᵉ récolte`, requis: true },
+        { nom: "pos", label: "Où la placer", type: "select", valeur: String(n - 1), options: plan.etapes.map((et, j) => [String(j + 1), `Après «${NB}${et.nom}${NB}»`]) },
+      ],
+    });
+    if (!r?.nom.trim()) return;
+    const pos = Number(r.pos);
+    plan.etapes.splice(pos, 0, { nom: r.nom.trim(), actions: [] });
+    decalerCampagne(plan, pos, 1);
+    ui.ouverts.clear();
+    ui.ouverts.add(pos);
+  },
+  async "renommer-etape"(d) {
+    const etape = planDe(ui.planId).etapes[d.etape];
+    const r = await demander({ titre: "Renommer l’étape", champs: [{ nom: "nom", label: "Nom de l’étape", valeur: etape.nom, requis: true }] });
+    if (r?.nom.trim()) etape.nom = r.nom.trim();
+  },
+  async "retirer-etape"(d) {
+    const plan = planDe(ui.planId), i = Number(d.etape), etape = plan.etapes[i];
+    const r = await demander({ titre: `Retirer «${NB}${etape.nom}${NB}» ?`, texte: `L’étape et ses ${pluriel(etape.actions.length, "action")} sont effacées du plan. Les étapes suivantes avancent d’un créneau.`, ok: "Retirer l’étape", danger: true });
+    if (!r) return;
+    plan.etapes.splice(i, 1);
+    decalerCampagne(plan, i, -1, etape);
+    ui.ouverts.clear();
+    ui.ouverts.add(-1);
+  },
+
   "edition-routines"() { ui.editionRoutines = !ui.editionRoutines; },
   async "ajouter-routine"() {
     const r = await demander({
@@ -459,9 +522,10 @@ const ACTIONS = {
       champs: [
         { nom: "texte", label: "À faire", requis: true },
         { nom: "periode", label: "Fréquence", type: "select", valeur: "jour", options: [["jour", "Chaque jour"], ["semaine", "Chaque semaine"]] },
+        { nom: "debut", label: "Si chaque semaine, elle repart le", type: "select", valeur: "1", options: [1, 2, 3, 4, 5, 6, 0].map(j => [String(j), majuscule(JOURS_SEMAINE[j])]) },
       ],
     });
-    if (r?.texte.trim()) etat.routines.push({ id: id(), texte: r.texte.trim(), periode: r.periode, faitLe: null });
+    if (r?.texte.trim()) etat.routines.push({ id: id(), texte: r.texte.trim(), periode: r.periode, debut: Number(r.debut), faitLe: null });
   },
   "retirer-routine"(d) { etat.routines = etat.routines.filter(r => r.id !== d.id); },
 

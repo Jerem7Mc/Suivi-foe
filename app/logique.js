@@ -130,13 +130,14 @@ export function dernierJeudi(d = new Date()) {
   return r;
 }
 
-/** Une routine cochée reste cochée jusqu'à la fin du jour ou de la semaine (lundi). */
+/** Une routine cochée le reste jusqu'à la fin du jour, ou jusqu'à son jour de reprise (`debut` : 0 dimanche… 6 samedi, lundi par défaut). */
 export function routineFaite(routine, maintenant = new Date()) {
   if (!routine.faitLe) return false;
   const fait = new Date(routine.faitLe);
   if (routine.periode === "jour") return isoJour(fait) === isoJour(maintenant);
-  const lundi = d => { const r = new Date(d.getFullYear(), d.getMonth(), d.getDate()); r.setDate(r.getDate() - ((r.getDay() + 6) % 7)); return isoJour(r); };
-  return lundi(fait) === lundi(maintenant);
+  const reprise = routine.debut ?? 1;
+  const semaine = d => { const r = new Date(d.getFullYear(), d.getMonth(), d.getDate()); r.setDate(r.getDate() - ((r.getDay() - reprise + 7) % 7)); return isoJour(r); };
+  return semaine(fait) === semaine(maintenant);
 }
 
 // ---------- Euphorie ----------
