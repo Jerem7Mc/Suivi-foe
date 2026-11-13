@@ -1,6 +1,6 @@
 // Mise en cache pour l'usage hors ligne. Changer VERSION à chaque mise en ligne.
 const VERSION = "suivi-foe-1";
-const FICHIERS = ["./", "index.html", "style.css", "app.js", "logique.js", "manifest.webmanifest", "icone.svg", "icone-180.png", "icone-512.png"];
+const FICHIERS = ["./", "index.html", "style.css", "app.js", "logique.js", "rappel.html", "manifest.webmanifest", "icone.svg", "icone-180.png", "icone-512.png"];
 
 self.addEventListener("install", ev => {
   ev.waitUntil(caches.open(VERSION).then(c => c.addAll(FICHIERS)).then(() => self.skipWaiting()));

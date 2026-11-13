@@ -137,7 +137,7 @@ function vueRecolte() {
   <button class="btn" type="button" data-action="noter-batiment">Noter un bâtiment posé ou vendu</button>`;
   const btnValider = `<button class="btn${prete ? " principal" : ""}" type="button" data-action="valider">Valider «${NB}${e(etape.nom)}${NB}»</button>`;
   const btnRappel = `<button class="btn principal" type="button" data-action="rappel">Ajouter le rappel au calendrier</button>`;
-  const autreRappel = prete ? "" : `<p class="note"><button class="lien" type="button" data-action="rappel-partage">Le calendrier ne s’ouvre pas ? Partager le fichier du rappel</button></p>`;
+  const autreRappel = prete ? "" : `<p class="note"><button class="lien" type="button" data-action="rappel-partage">Safari ne s’ouvre pas ? Partager le fichier du rappel</button></p>`;
   const suivante = plan.etapes[i + 1];
   const ensuite = suivante ? `<h2>Ensuite</h2>
     <div class="verre bloc">
@@ -378,9 +378,13 @@ const ACTIONS = {
     etat.campagne.validations[indexCourant() - 1] = null;
   },
   async rappel() {
-    // Sur iPhone, ouvrir directement l'événement : la feuille de partage ne propose pas le calendrier.
-    if (iOS) location.href = "data:text/calendar;charset=utf-8," + encodeURIComponent(texteRappel());
-    else await remettreFichier(fichierRappel());
+    if (!iOS) return remettreFichier(fichierRappel());
+    // Sur iPhone, seul Safari sait ouvrir un événement de calendrier : l'app installée lui passe la main
+    // (adresse x-safari-https, iOS 17 et suivants), sur une page qui porte le bouton d'ajout.
+    const c = etat.campagne, i = indexCourant(), etape = planCampagne().etapes[i];
+    const params = new URLSearchParams({ t: pretA(c.debut, i, c.validations[i - 1]).getTime(), n: etape.nom, d: etape.actions.map(a => a.texte).join("\n") });
+    const page = new URL("rappel.html#" + params, location.href).href;
+    location.href = navigator.standalone ? page.replace(/^https:/, "x-safari-https:") : page;
   },
   async "rappel-partage"() { await remettreFichier(fichierRappel()); },
   async "noter-batiment"() {
